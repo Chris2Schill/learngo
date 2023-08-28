@@ -18,18 +18,15 @@ const (
 type Playground struct {
     eventBus *eventbus.Dispatcher
     wg *sync.WaitGroup
-    subbedEvents [](chan int)
+    subbedEvents map[eventbus.Event](chan int)
 }
 
 func NewPlayground(eb *eventbus.Dispatcher) Playground {
-    subbedEvents := make([]chan int, 0)
+    subbedEvents := make(map[eventbus.Event]chan int, 0)
 
-    subbedEvents = append(subbedEvents,
-                          eb.Subscribe(Event1))
-    subbedEvents = append(subbedEvents,
-                          eb.Subscribe(Event2))
-    subbedEvents = append(subbedEvents,
-                          eb.Subscribe(Event3))
+    subbedEvents[Event1] = eb.Subscribe(Event1)
+    subbedEvents[Event2] = eb.Subscribe(Event2)
+    subbedEvents[Event3] = eb.Subscribe(Event3)
 
     pg := Playground{
         eb,
@@ -43,11 +40,11 @@ func process1(pg *Playground) {
     var val int
     for {
         select {
-        case val = <- pg.subbedEvents[0]:
+        case val = <- pg.subbedEvents[Event1]:
             fmt.Println("Recieved event1, val=", val)
-        case val = <- pg.subbedEvents[1]:
+        case val = <- pg.subbedEvents[Event2]:
             fmt.Println("Recieved event2, val=", val)
-        case val = <- pg.subbedEvents[2]:
+        case val = <- pg.subbedEvents[Event3]:
             fmt.Println("Recieved event3, val=", val)
         }
         pg.wg.Done()
