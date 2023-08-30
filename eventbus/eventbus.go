@@ -1,52 +1,62 @@
 package eventbus
 
 import (
-	"fmt"
+	"sync"
+
+	"github.com/Chris2Schill/learngo/logger"
 )
 
 type Event int64
+
+type Dispatcher interface {
+	Subscribe(e Event) chan int
+	Publish(e Event, data int)
+	Dispatch()
+}
 
 type EventPayload struct {
 	eventType Event
 	data      int
 }
 
-type Dispatcher struct {
+type defaultDispatcher struct {
+	busLock    sync.Mutex
 	bus        map[Event][]chan int
 	eventQueue chan EventPayload
 }
 
 func NewDispatcher() Dispatcher {
-	eb := Dispatcher{
+	d := defaultDispatcher{
+		sync.Mutex{},
 		make(map[Event][]chan int),
 		make(chan EventPayload, 100),
 	}
 
-	go dispatch(&eb)
-
-	return eb
+	return d
 }
 
-func (eb *Dispatcher) Subscribe(e Event) chan int {
+func (d defaultDispatcher) Subscribe(e Event) chan int {
+	d.busLock.Lock()
+	defer d.busLock.Unlock()
 
 	newChan := make(chan int)
-	eb.bus[e] = append(eb.bus[e], newChan)
+	d.bus[e] = append(d.bus[e], newChan)
 
-	fmt.Println("subscribed to ", e)
+	logger.Println("subscribed to ", e)
 
 	return newChan
 }
 
-func (eb *Dispatcher) Publish(e Event, data int) {
+func (d defaultDispatcher) Publish(e Event, data int) {
 	payload := EventPayload{
 		e,
 		data,
 	}
 
-	eb.eventQueue <- payload
+	d.eventQueue <- payload
 }
 
-func dispatch(d *Dispatcher) {
+func (d defaultDispatcher) Dispatch() {
 	var payload EventPayload
 	for {
 		payload = <-d.eventQueue

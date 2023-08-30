@@ -1,10 +1,10 @@
 package playground
 
 import (
-	"fmt"
-	"sync"
+	"context"
 
 	"github.com/Chris2Schill/learngo/eventbus"
+	"github.com/Chris2Schill/learngo/logger"
 )
 
 const (
@@ -15,12 +15,11 @@ const (
 )
 
 type Playground struct {
-	*sync.WaitGroup
-	eventBus     *eventbus.Dispatcher
+	eventBus     eventbus.Dispatcher
 	subbedEvents map[eventbus.Event](chan int)
 }
 
-func New(eb *eventbus.Dispatcher) *Playground {
+func New(eb eventbus.Dispatcher) *Playground {
 	subbedEvents := make(map[eventbus.Event]chan int, 0)
 
 	subbedEvents[Event1] = eb.Subscribe(Event1)
@@ -31,20 +30,22 @@ func New(eb *eventbus.Dispatcher) *Playground {
 		eventBus:     eb,
 		subbedEvents: subbedEvents,
 	}
+
 	return &pg
 }
 
-func (pg *Playground) Process() {
+func (pg *Playground) Process(ctx context.Context) {
 	var val int
 	for {
 		select {
 		case val = <-pg.subbedEvents[Event1]:
-			fmt.Println("Recieved event1, val=", val)
+			logger.Println("Recieved event1, val=", val)
 		case val = <-pg.subbedEvents[Event2]:
-			fmt.Println("Recieved event2, val=", val)
+			logger.Println("Recieved event2, val=", val)
 		case val = <-pg.subbedEvents[Event3]:
-			fmt.Println("Recieved event3, val=", val)
+			logger.Println("Recieved event3, val=", val)
+		case <-ctx.Done():
+			return
 		}
-		pg.Done()
 	}
 }
