@@ -10,6 +10,7 @@ import (
 	"github.com/Chris2Schill/learngo/logger"
 	"github.com/Chris2Schill/learngo/playground"
 	"github.com/Chris2Schill/learngo/writers"
+	"github.com/Chris2Schill/learngo/chat-server"
 )
 
 func runWriterDecoratorTest() {
